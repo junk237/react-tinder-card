@@ -170,18 +170,28 @@ const TinderCard = React.forwardRef(
       let lastPosition = { dx: 0, dy: 0, vx: 0, vy: 0, timeStamp: Date.now() }
       let isClicking = false
 
-      element.current.addEventListener(('touchstart'), (ev) => {
-        const gestureState = gestureStateFromWebEvent(ev, startPositon, lastPosition, true)
-        lastPosition = gestureState
-        startPositon = { x: ev.touches[0].clientX, y: ev.touches[0].clientY }
-      }, { passive: true });
+      const handleTouchStart = (ev) => {
+        if (!ev.srcElement.className.includes('pressable') && ev.cancelable) {
+          ev.preventDefault()
+        }
+        const gestureState = gestureStateFromWebEvent(ev, startPositon, lastPosition, true);
+        lastPosition = gestureState;
+        startPositon = { x: ev.touches[0].clientX, y: ev.touches[0].clientY };
+      };
 
-      element.current.addEventListener(('mousedown'), (ev) => {
-        isClicking = true
-        const gestureState = gestureStateFromWebEvent(ev, startPositon, lastPosition, false)
-        lastPosition = gestureState
-        startPositon = { x: ev.clientX, y: ev.clientY }
-      })
+      const handleMouseDown = (ev) => {
+        isClicking = true;
+        const gestureState = gestureStateFromWebEvent(ev, startPositon, lastPosition, false);
+        lastPosition = gestureState;
+        startPositon = { x: ev.clientX, y: ev.clientY };
+      };
+
+      const handleMouseMove = (ev) => {
+        if (!isClicking) return;
+        const gestureState = gestureStateFromWebEvent(ev, startPositon, lastPosition, false);
+        lastPosition = gestureState;
+        handleMove(gestureState);
+      };
 
       const handleMove = (gestureState) => {
         // Check fulfillment
@@ -189,51 +199,60 @@ const TinderCard = React.forwardRef(
           const dir = getSwipeDirection({
             x: swipeRequirementType === 'velocity' ? gestureState.vx : gestureState.dx,
             y: swipeRequirementType === 'velocity' ? gestureState.vy : gestureState.dy
-          })
+          });
           if (dir !== swipeThresholdFulfilledDirection) {
-            swipeThresholdFulfilledDirection = dir
+            swipeThresholdFulfilledDirection = dir;
             if (swipeThresholdFulfilledDirection === 'none') {
-              if (onSwipeRequirementUnfulfilled) onSwipeRequirementUnfulfilled()
+              if (onSwipeRequirementUnfulfilled) onSwipeRequirementUnfulfilled();
             } else {
-              if (onSwipeRequirementFulfilled) onSwipeRequirementFulfilled(dir)
+              if (onSwipeRequirementFulfilled) onSwipeRequirementFulfilled(dir);
             }
           }
         }
 
         // use guestureState.vx / guestureState.vy for velocity calculations
         // translate element
-        let rot = gestureState.vx * 15 // Magic number 15 looks about right
-        if (isNaN(rot)) rot = 0
-        rot = Math.max(Math.min(rot, settings.maxTilt), -settings.maxTilt)
-        setSpringTarget.start({ xyrot: [gestureState.dx, gestureState.dy, rot], config: physics.touchResponsive })
-      }
+        let rot = gestureState.vx * 15; // Magic number 15 looks about right
+        if (isNaN(rot)) rot = 0;
+        rot = Math.max(Math.min(rot, settings.maxTilt), -settings.maxTilt);
+        setSpringTarget.start({ xyrot: [gestureState.dx, gestureState.dy, rot], config: physics.touchResponsive });
+      };
 
-      window.addEventListener(('mousemove'), (ev) => {
-        if (!isClicking) return
-        const gestureState = gestureStateFromWebEvent(ev, startPositon, lastPosition, false)
-        lastPosition = gestureState
-        handleMove(gestureState)
-      }, { passive: true });
+      const handleMouseUp = (ev) => {
+        if (!isClicking) return;
+        isClicking = false;
+        handleSwipeReleased(setSpringTarget, lastPosition);
+        startPositon = { x: 0, y: 0 };
+        lastPosition = { dx: 0, dy: 0, vx: 0, vy: 0, timeStamp: Date.now() };
+      };
 
-      window.addEventListener(('mouseup'), (ev) => {
-        if (!isClicking) return
-        isClicking = false
-        handleSwipeReleased(setSpringTarget, lastPosition)
-        startPositon = { x: 0, y: 0 }
-        lastPosition = { dx: 0, dy: 0, vx: 0, vy: 0, timeStamp: Date.now() }
-      })
+      const handleTouchMove = (ev) => {
+        const gestureState = gestureStateFromWebEvent(ev, startPositon, lastPosition, true);
+        lastPosition = gestureState;
+        handleMove(gestureState);
+      };
 
-      element.current.addEventListener(('touchmove'), (ev) => {
-        const gestureState = gestureStateFromWebEvent(ev, startPositon, lastPosition, true)
-        lastPosition = gestureState
-        handleMove(gestureState)
-      })
+      const handleTouchEnd = (ev) => {
+        handleSwipeReleased(setSpringTarget, lastPosition);
+        startPositon = { x: 0, y: 0 };
+        lastPosition = { dx: 0, dy: 0, vx: 0, vy: 0, timeStamp: Date.now() };
+      };
 
-      element.current.addEventListener(('touchend'), (ev) => {
-        handleSwipeReleased(setSpringTarget, lastPosition)
-        startPositon = { x: 0, y: 0 }
-        lastPosition = { dx: 0, dy: 0, vx: 0, vy: 0, timeStamp: Date.now() }
-      })
+      element.current.addEventListener('touchstart', handleTouchStart, { passive: true });
+      element.current.addEventListener('mousedown', handleMouseDown);
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      element.current.addEventListener('touchmove', handleTouchMove, { passive: true });
+      element.current.addEventListener('touchend', handleTouchEnd);
+
+      return () => {
+        element.current.removeEventListener('touchstart', handleTouchStart);
+        element.current.removeEventListener('mousedown', handleMouseDown);
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+        element.current.removeEventListener('touchmove', handleTouchMove);
+        element.current.removeEventListener('touchend', handleTouchEnd);
+      };
     })
 
     const element = React.useRef()
