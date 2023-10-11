@@ -95,7 +95,7 @@ const TinderCard = React.forwardRef(
     settings.swipeThreshold = swipeThreshold
 
     React.useImperativeHandle(ref, () => ({
-      async swipe (dir = 'right') {
+      async swipe(dir = 'right') {
         if (onSwipe) onSwipe(dir)
         const power = 1.3
         const disturbance = (Math.random() - 0.5) / 2
@@ -110,7 +110,7 @@ const TinderCard = React.forwardRef(
         }
         if (onCardLeftScreen) onCardLeftScreen(dir)
       },
-      async restoreCard () {
+      async restoreCard() {
         await animateBack(setSpringTarget)
       }
     }))
@@ -171,14 +171,14 @@ const TinderCard = React.forwardRef(
       let isClicking = false
 
       element.current.addEventListener(('touchstart'), (ev) => {
-        if (!ev.srcElement.className.includes('pressable') && ev.cancelable) {
-          ev.preventDefault()
-        }
+        // if (!ev.srcElement.className.includes('pressable') && ev.cancelable) {
+        //   ev.preventDefault()
+        // }
 
         const gestureState = gestureStateFromWebEvent(ev, startPositon, lastPosition, true)
         lastPosition = gestureState
         startPositon = { x: ev.touches[0].clientX, y: ev.touches[0].clientY }
-      })
+      }, { passive: true });
 
       element.current.addEventListener(('mousedown'), (ev) => {
         isClicking = true
@@ -217,7 +217,7 @@ const TinderCard = React.forwardRef(
         const gestureState = gestureStateFromWebEvent(ev, startPositon, lastPosition, false)
         lastPosition = gestureState
         handleMove(gestureState)
-      })
+      }, { passive: true });
 
       window.addEventListener(('mouseup'), (ev) => {
         if (!isClicking) return
