@@ -270,4 +270,6 @@ const TinderCard = React.forwardRef(
   }
 )
 
+TinderCard.displayName = "TinderCard";
+
 module.exports = TinderCard
