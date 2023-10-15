@@ -257,16 +257,13 @@ const TinderCard = React.forwardRef(
 
     const element = React.useRef()
 
-    return (
-      React.createElement(AnimatedDiv, {
-        ref: element,
-        className,
-        style: {
-          transform: xyrot.to((x, y, rot) => `translate3d(${x}px, ${y}px, ${0}px) rotate(${rot}deg)`)
-        },
-        children
-      })
-    )
+    return React.createElement(AnimatedDiv, {
+      ref: element,
+      className,
+      style: {
+        transform: xyrot.to((x, y, rot) => `translate3d(${x}px, ${y}px, ${0}px) rotate(${rot}deg)`)
+      }
+    }, children);
   }
 )
 
